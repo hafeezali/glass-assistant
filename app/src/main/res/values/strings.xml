@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Glass Assistant</string>
+    <string name="title_activity_main">Glass Assistant Immersion</string>
+    <string name="voice_command">Describe Scene!</string>
+    <string name="conn_socket">Connect to Laptop Server</string>
+    <string name="conn_bluetooth">Connect to Mobile Server</string>
+    <string name="conn_raspPi">Connect to Raspberry Pi</string>
+</resources>
