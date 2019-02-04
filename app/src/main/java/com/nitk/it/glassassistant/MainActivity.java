@@ -2,7 +2,10 @@ package com.nitk.it.glassassistant;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.FileObserver;
+import android.provider.MediaStore;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -12,12 +15,15 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 
+import com.google.android.glass.content.Intents;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.google.android.glass.view.WindowUtils;
 import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
+
+import java.io.File;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -42,6 +48,10 @@ public class MainActivity extends Activity {
     private View mView;
 
     private GestureDetector mGestureDetector;
+
+    private static final int TAKE_PICTURE_REQUEST = 1;
+
+    private File image;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -168,6 +178,85 @@ public class MainActivity extends Activity {
     }
 
     private void connect(String platform) {
+        takePicture();
+        if (platform.equalsIgnoreCase("Sockets")){
+
+        }
+        else if(platform.equalsIgnoreCase("Bluetooth")){
+
+        }
+        else if(platform.equalsIgnoreCase("RaspberryPi")){
+
+        }
+        else{
+            // TODO: throw invalid param exception
+        }
+    }
+
+    private void takePicture() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(intent, TAKE_PICTURE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
+            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
+            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
+
+            processPictureWhenReady(picturePath);
+            // TODO: Show the thumbnail to the user while the full picture is being processed.
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void processPictureWhenReady(final String picturePath) {
+        final File pictureFile = new File(picturePath);
+
+        if (pictureFile.exists()) {
+            // The picture is ready; process it.
+            image = pictureFile;
+        } else {
+            // The file does not exist yet. Before starting the file observer, you
+            // can update your UI to let the user know that the application is
+            // waiting for the picture (for example, by displaying the thumbnail
+            // image and a progress indicator).
+
+            // TODO: Show the thumbnail and a progress indicator to the user while the full picture is being processed.
+
+            final File parentDirectory = pictureFile.getParentFile();
+            FileObserver observer = new FileObserver(parentDirectory.getPath(),
+                    FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
+                // Protect against additional pending events after CLOSE_WRITE
+                // or MOVED_TO is handled.
+                private boolean isFileWritten;
+
+                @Override
+                public void onEvent(int event, String path) {
+                    if (!isFileWritten) {
+                        // For safety, make sure that the file that was created in
+                        // the directory is actually the one that we're expecting.
+                        File affectedFile = new File(parentDirectory, path);
+                        isFileWritten = affectedFile.equals(pictureFile);
+
+                        if (isFileWritten) {
+                            stopWatching();
+
+                            // Now that the file is ready, recursively call
+                            // processPictureWhenReady again (on the UI thread).
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    processPictureWhenReady(picturePath);
+                                }
+                            });
+                        }
+                    }
+                }
+            };
+            observer.startWatching();
+        }
     }
 
     @Override
