@@ -53,6 +53,8 @@ public class MainActivity extends Activity {
 
     private File image;
 
+    private  String platform;
+
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
@@ -163,24 +165,24 @@ public class MainActivity extends Activity {
         if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS || featureId == Window.FEATURE_OPTIONS_PANEL) {
             switch (item.getItemId()) {
                 case R.id.connect_socket:
-                    connect("Sockets");
+                    platform = "Sockets";
                     break;
                 case R.id.connect_bluetooth:
-                    connect("Bluetooth");
+                    platform = "Bluetooth";
                     break;
                 case R.id.connect_raspPi:
-                    connect("RaspberryPi");
+                    platform = "RaspberryPi";
                     break;
             }
+            takePicture();
             return true;
         }
         return super.onMenuItemSelected(featureId, item);
     }
 
-    private void connect(String platform) {
-        takePicture();
+    private void connect() {
         if (platform.equalsIgnoreCase("Sockets")){
-
+            System.out.println(image);
         }
         else if(platform.equalsIgnoreCase("Bluetooth")){
 
@@ -207,7 +209,6 @@ public class MainActivity extends Activity {
             processPictureWhenReady(picturePath);
             // TODO: Show the thumbnail to the user while the full picture is being processed.
         }
-
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -257,6 +258,7 @@ public class MainActivity extends Activity {
             };
             observer.startWatching();
         }
+        connect();
     }
 
     @Override
