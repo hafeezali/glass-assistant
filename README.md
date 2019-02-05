@@ -1,2 +1,0 @@
-# glass-assistant
-Major Project
