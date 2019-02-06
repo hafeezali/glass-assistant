@@ -1,9 +1,6 @@
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -13,6 +10,7 @@ public class CaptionServer {
     private Socket socket = null;
     private ServerSocket serverSocket = null;
     private InputStream inputStream = null;
+    private DataInputStream dataInputStream;
     private byte[] imageBytes;
     private ByteArrayInputStream byteArrayInputStream;
     private BufferedImage bufferedImage = null;
@@ -29,6 +27,7 @@ public class CaptionServer {
             socket = serverSocket.accept();
             System.out.println("Connection Established");
             inputStream = socket.getInputStream();
+            dataInputStream = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -40,17 +39,19 @@ public class CaptionServer {
     }
 
     private void listen() {
-        while (true) {
-            try {
-                System.out.println("Waiting for image");
-                inputStream.read(imageBytes);
-                byteArrayInputStream = new ByteArrayInputStream(imageBytes);
-                bufferedImage = ImageIO.read(byteArrayInputStream);
-                ImageIO.write(bufferedImage, "jpg", new File(path + count.toString() + "." + imageType));
-                caption = getCaption();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            System.out.println("Waiting for image size in bytes");
+            int size = dataInputStream.readInt();
+            System.out.println(size);
+            imageBytes = new byte[size];
+            System.out.println("Waiting for image");
+            inputStream.read(imageBytes);
+            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+            bufferedImage = ImageIO.read(byteArrayInputStream);
+            ImageIO.write(bufferedImage, "jpg", new File(path + count.toString() + "." + imageType));
+            caption = getCaption();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
