@@ -5,4 +5,7 @@
     <string name="conn_socket">Connect to Laptop Server</string>
     <string name="conn_bluetooth">Connect to Mobile Server</string>
     <string name="conn_raspPi">Connect to Raspberry Pi</string>
+    <string name="title_activity_image_client">Image Client Activity</string>
+    <string name="sending_image_socket">Sending Image to Laptop Server</string>
+    <string name="server_address">127.0.0.1</string>
 </resources>

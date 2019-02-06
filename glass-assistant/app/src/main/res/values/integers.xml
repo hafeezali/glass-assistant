@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="port">5000</integer>
+    <integer name="compression">70</integer>
+</resources>

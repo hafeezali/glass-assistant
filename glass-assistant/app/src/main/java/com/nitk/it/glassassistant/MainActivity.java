@@ -24,7 +24,6 @@ import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
 import java.io.File;
-import java.net.ServerSocket;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -52,9 +51,13 @@ public class MainActivity extends Activity {
 
     private static final int TAKE_PICTURE_REQUEST = 1;
 
-    private File image;
+    private static final int GENERATE_CAPTION_SOCKET_REQUEST = 2;
+
+    private File imageFile;
 
     private String platform;
+
+    private String caption;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -183,7 +186,9 @@ public class MainActivity extends Activity {
 
     private void connect() {
         if (platform.equalsIgnoreCase("Sockets")){
-
+            Intent intent = new Intent(getBaseContext(), SocketClientActivity.class);
+            intent.putExtra("IMAGE", imageFile);
+            startActivityForResult(intent, GENERATE_CAPTION_SOCKET_REQUEST);
         }
         else if(platform.equalsIgnoreCase("Bluetooth")){
 
@@ -210,8 +215,16 @@ public class MainActivity extends Activity {
             processPictureWhenReady(picturePath);
             // TODO: Show the thumbnail to the user while the full picture is being processed.
         }
+        else if(requestCode == GENERATE_CAPTION_SOCKET_REQUEST  && resultCode == RESULT_OK) {
+            caption = data.getStringExtra("CAPTION");
+            System.out.println("............................................");
+            System.out.println("............................................");
+            System.out.println(caption);
+            System.out.println("............................................");
+            System.out.println("............................................");
+
+        }
         super.onActivityResult(requestCode, resultCode, data);
-        connect();
     }
 
     private void processPictureWhenReady(final String picturePath) {
@@ -219,7 +232,7 @@ public class MainActivity extends Activity {
 
         if (pictureFile.exists()) {
             // The picture is ready; process it.
-            image = pictureFile;
+            System.out.println("Hello");
         } else {
             // The file does not exist yet. Before starting the file observer, you
             // can update your UI to let the user know that the application is
@@ -260,6 +273,8 @@ public class MainActivity extends Activity {
             };
             observer.startWatching();
         }
+        imageFile = pictureFile;
+        connect();
     }
 
     @Override
