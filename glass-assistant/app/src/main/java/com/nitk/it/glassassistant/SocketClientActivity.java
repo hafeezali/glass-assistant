@@ -1,10 +1,5 @@
 package com.nitk.it.glassassistant;
 
-import com.google.android.glass.media.Sounds;
-import com.google.android.glass.widget.CardBuilder;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -17,7 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 
+import com.google.android.glass.media.Sounds;
+import com.google.android.glass.widget.CardBuilder;
+import com.google.android.glass.widget.CardScrollAdapter;
+import com.google.android.glass.widget.CardScrollView;
+
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,6 +51,7 @@ public class SocketClientActivity extends Activity {
     private File imageFile;
     private FileInputStream fileInputStream;
     private OutputStream outputStream;
+    private DataOutputStream dataOutputStream;
     private byte [] imageBytes;
     private String caption;
 
@@ -64,10 +66,13 @@ public class SocketClientActivity extends Activity {
                 Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
                 imageBytes = getBytesFromBitmap(bitmap);
                 outputStream = socket.getOutputStream();
+                dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                System.out.println("Sending size of image bytes....");
+                dataOutputStream.writeInt(imageBytes.length);
+                System.out.println(imageBytes.length);
+                System.out.println("Sending image bytes....");
                 outputStream.write(imageBytes);
                 outputStream.flush();
-                outputStream.close();
-                fileInputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -144,7 +149,7 @@ public class SocketClientActivity extends Activity {
     private byte[] getBytesFromBitmap(Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         // TODO: Must use strings and integers defined in values/strings.xml & integers.xml
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 5, stream);
         return stream.toByteArray();
     }
 
