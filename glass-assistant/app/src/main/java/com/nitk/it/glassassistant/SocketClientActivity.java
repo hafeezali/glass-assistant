@@ -3,8 +3,6 @@ package com.nitk.it.glassassistant;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -17,11 +15,10 @@ import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -49,30 +46,35 @@ public class SocketClientActivity extends Activity {
 
     private Socket socket;
     private File imageFile;
-    private FileInputStream fileInputStream;
+    private InputStream inputStream;
     private OutputStream outputStream;
-    private DataOutputStream dataOutputStream;
-    private byte [] imageBytes;
     private String caption;
+    private byte [] imageBytes;
+    private long length;
+    private SendImageTask sendImageTask;
 
-    public class SendImageTask extends AsyncTask<File, Integer, Long> {
+    public class SendImageTask extends AsyncTask<Void, Void, Void> {
 
         @Override
-        protected Long doInBackground(File... files) {
+        protected Void doInBackground(Void... voids) {
+            System.out.println("Entering SocketClientActivity.SendImageTask doInBackground");
+            if (isCancelled()) {
+                return null;
+            }
             try {
-//                socket = new Socket(String.valueOf(R.string.server_address), R.integer.port);
                 socket = new Socket("192.168.43.205",5000);
-                fileInputStream = new FileInputStream(imageFile);
-                Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
-                imageBytes = getBytesFromBitmap(bitmap);
+                imageBytes = new byte[16 * 1024];
+                length = imageFile.length();
                 outputStream = socket.getOutputStream();
-                dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                System.out.println("Sending size of image bytes....");
-                dataOutputStream.writeInt(imageBytes.length);
-                System.out.println(imageBytes.length);
-                System.out.println("Sending image bytes....");
-                outputStream.write(imageBytes);
+                inputStream = new FileInputStream(imageFile);
+                int count;
+                while ((count = inputStream.read(imageBytes)) > 0) {
+                    outputStream.write(imageBytes, 0, count);
+                }
                 outputStream.flush();
+                outputStream.close();
+                inputStream.close();
+                socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -80,19 +82,24 @@ public class SocketClientActivity extends Activity {
         }
 
         @Override
-        protected void onProgressUpdate(Integer... values) {
+        protected void onProgressUpdate(Void... values) {
+            System.out.println("Entering SocketClientActivity.SendImageTask onProgressUpdate");
             super.onProgressUpdate(values);
         }
 
         @Override
-        protected void onPostExecute(Long aLong) {
+        protected void onPostExecute(Void aLong) {
+            System.out.println("Entering SocketClientActivity.SendImageTask onPostExecute");
             super.onPostExecute(aLong);
+            sendImageTask.cancel(true);
+            getResponseFromServer();
         }
 
     }
 
     @Override
     protected void onCreate(Bundle bundle) {
+        System.out.println("Entering SocketClientActivity onCreate");
         super.onCreate(bundle);
 
         mView = buildView();
@@ -133,24 +140,18 @@ public class SocketClientActivity extends Activity {
         });
         setContentView(mCardScroller);
         imageFile = (File) getIntent().getExtras().get("IMAGE");
-        new SendImageTask().execute(imageFile);
-        getResponseFromServer();
+        sendImageTask = new SendImageTask();
+        sendImageTask.execute();
     }
 
     private void getResponseFromServer() {
+        System.out.println("Entering SocketClientActivity getResponseFromServer");
         // TODO: Receive caption from server
         caption = "DUMMY CAPTION";
         Intent resultIntent = new Intent();
         resultIntent.putExtra("CAPTION", caption);
         setResult(Activity.RESULT_OK, resultIntent);
         finish();
-    }
-
-    private byte[] getBytesFromBitmap(Bitmap bitmap) {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        // TODO: Must use strings and integers defined in values/strings.xml & integers.xml
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 5, stream);
-        return stream.toByteArray();
     }
 
     @Override
@@ -169,6 +170,7 @@ public class SocketClientActivity extends Activity {
      * View displayed while image is being sent and response is received.
      */
     private View buildView() {
+        System.out.println("Entering SocketClientActivity.SendImageTask buildView");
         CardBuilder card = new CardBuilder(this, CardBuilder.Layout.TEXT);
 
         card.setText(R.string.sending_image_socket);

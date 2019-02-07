@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle bundle) {
+        System.out.println("Entering MainActivity OnCreate");
         super.onCreate(bundle);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().requestFeature(WindowUtils.FEATURE_VOICE_COMMANDS);
@@ -106,6 +107,7 @@ public class MainActivity extends Activity {
     }
 
     private GestureDetector createGestureDetector(Context context) {
+        System.out.println("Entering MainActivity createGestureDetector");
         GestureDetector gestureDetector = new GestureDetector(context);
 
         gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
@@ -149,6 +151,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
+        System.out.println("Entering MainActivity OnGenericMotionEvent");
         if (mGestureDetector != null) {
             return mGestureDetector.onMotionEvent(event);
         }
@@ -157,6 +160,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onCreatePanelMenu(int featureId, Menu menu) {
+        System.out.println("Entering MainActivity onCreatePanelMenu");
         if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS || featureId == Window.FEATURE_OPTIONS_PANEL) {
             getMenuInflater().inflate(R.menu.main, menu);
             return true;
@@ -166,6 +170,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        System.out.println("Entering onMenuItemSelected");
         if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS || featureId == Window.FEATURE_OPTIONS_PANEL) {
             switch (item.getItemId()) {
                 case R.id.connect_socket:
@@ -185,6 +190,7 @@ public class MainActivity extends Activity {
     }
 
     private void connect() {
+        System.out.println("Entering MainActivity connect");
         if (platform.equalsIgnoreCase("Sockets")){
             Intent intent = new Intent(getBaseContext(), SocketClientActivity.class);
             intent.putExtra("IMAGE", imageFile);
@@ -202,13 +208,16 @@ public class MainActivity extends Activity {
     }
 
     private void takePicture() {
+        System.out.println("Entering MainActivity takePicture");
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(intent, TAKE_PICTURE_REQUEST);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        System.out.println("Entering MainActivity onActivityResult");
         if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
+            System.out.println("         MainActivity onActivityResult PictureIntent");
             String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
 
@@ -216,23 +225,22 @@ public class MainActivity extends Activity {
             // TODO: Show the thumbnail to the user while the full picture is being processed.
         }
         else if(requestCode == GENERATE_CAPTION_SOCKET_REQUEST  && resultCode == RESULT_OK) {
+            System.out.println("         MainActivity onActivityResult SocketClientActivity intent");
             caption = data.getStringExtra("CAPTION");
-            System.out.println("............................................");
-            System.out.println("............................................");
-            System.out.println(caption);
-            System.out.println("............................................");
-            System.out.println("............................................");
-
+            System.out.println("         MainActivity caption got from SocketClientActivity: " + caption);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void processPictureWhenReady(final String picturePath) {
+        System.out.println("Entering MainActivity processPictureWhenReady");
         final File pictureFile = new File(picturePath);
 
         if (pictureFile.exists()) {
             // The picture is ready; process it.
-            System.out.println("Hello");
+            System.out.println("        MainActivity: pictureFile exists");
+            imageFile = pictureFile;
+            connect();
         } else {
             // The file does not exist yet. Before starting the file observer, you
             // can update your UI to let the user know that the application is
@@ -273,8 +281,6 @@ public class MainActivity extends Activity {
             };
             observer.startWatching();
         }
-        imageFile = pictureFile;
-        connect();
     }
 
     @Override
@@ -293,6 +299,7 @@ public class MainActivity extends Activity {
      * Builds a Glass styled "Describe Scene!" view using the {@link CardBuilder} class.
      */
     private View buildView() {
+        System.out.println("Entering MainActivity buildView");
         CardBuilder card = new CardBuilder(this, CardBuilder.Layout.COLUMNS);
 
         card.setText(R.string.voice_command);
