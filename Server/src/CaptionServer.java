@@ -1,33 +1,27 @@
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class CaptionServer {
 
-    private int port;
     private Socket socket = null;
     private ServerSocket serverSocket = null;
     private InputStream inputStream = null;
-    private DataInputStream dataInputStream;
     private byte[] imageBytes;
-    private ByteArrayInputStream byteArrayInputStream;
-    private BufferedImage bufferedImage = null;
     private Integer count = 0;
-    private String path = "/home/hafeez/Desktop/Major Project/ImagesRecieved/";
+    private String path = "/home/hafeez/Desktop/Major Project/ImagesReceived/";
     private String imageType = "jpg";
     private String caption;
+    private OutputStream out;
+    private int byteCount;
+    private boolean fileCreated;
 
     private CaptionServer(int port) {
-        this.port = port;
         try {
-            System.out.println("Hello");
             serverSocket = new ServerSocket(port);
-            socket = serverSocket.accept();
-            System.out.println("Connection Established");
-            inputStream = socket.getInputStream();
-            dataInputStream = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,19 +33,31 @@ public class CaptionServer {
     }
 
     private void listen() {
-        try {
-            System.out.println("Waiting for image size in bytes");
-            int size = dataInputStream.readInt();
-            System.out.println(size);
-            imageBytes = new byte[size];
-            System.out.println("Waiting for image");
-            inputStream.read(imageBytes);
-            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
-            bufferedImage = ImageIO.read(byteArrayInputStream);
-            ImageIO.write(bufferedImage, "jpg", new File(path + count.toString() + "." + imageType));
-            caption = getCaption();
-        } catch (IOException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                socket = serverSocket.accept();
+                System.out.println("Connection Established...");
+                inputStream = socket.getInputStream();
+                imageBytes = new byte[16 * 1024];
+                fileCreated = false;
+                while ((byteCount = inputStream.read(imageBytes)) > 0) {
+                    if (!fileCreated) {
+                        System.out.println("Receiving image: " + count.toString());
+                        out = new FileOutputStream(path + count.toString() + "." + imageType);
+                        fileCreated = true;
+                    }
+                    out.write(imageBytes, 0, byteCount);
+                }
+                if (fileCreated) {
+                    out.close();
+                    caption = getCaption();
+                    System.out.println("Saved image: " + count.toString());
+                    count++;
+                    // TODO: Need to send caption back to client
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
