@@ -8,4 +8,5 @@
     <string name="title_activity_image_client">Image Client Activity</string>
     <string name="sending_image_socket">Sending Image to Laptop Server</string>
     <string name="server_address">127.0.0.1</string>
+    <string name="title_activity_caption">Caption Activity</string>
 </resources>

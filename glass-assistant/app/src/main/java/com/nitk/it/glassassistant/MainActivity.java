@@ -53,6 +53,8 @@ public class MainActivity extends Activity {
 
     private static final int GENERATE_CAPTION_SOCKET_REQUEST = 2;
 
+    private static final int CAPTION_RESULT_REQUEST = 3;
+
     private File imageFile;
 
     private String platform;
@@ -228,8 +230,18 @@ public class MainActivity extends Activity {
             System.out.println("         MainActivity onActivityResult SocketClientActivity intent");
             caption = data.getStringExtra("CAPTION");
             System.out.println("         MainActivity caption got from SocketClientActivity: " + caption);
+            convertToAudio();
+        } else if (requestCode == CAPTION_RESULT_REQUEST && resultCode == RESULT_OK) {
+            System.out.println("         MainActivity onActivityResult CaptionActivity intent");
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void convertToAudio() {
+        Intent captionIntent = new Intent(getBaseContext(), CaptionActivity.class);
+        captionIntent.putExtra("IMAGE", imageFile);
+        captionIntent.putExtra("CAPTION", caption);
+        startActivityForResult(captionIntent, CAPTION_RESULT_REQUEST);
     }
 
     private void processPictureWhenReady(final String picturePath) {

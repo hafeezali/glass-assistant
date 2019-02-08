@@ -15,6 +15,7 @@ import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class SocketClientActivity extends Activity {
     private byte [] imageBytes;
     private long length;
     private SendImageTask sendImageTask;
+    private DataInputStream dataInputStream;
 
     public class SendImageTask extends AsyncTask<Void, Void, Void> {
 
@@ -75,6 +77,11 @@ public class SocketClientActivity extends Activity {
                 outputStream.close();
                 inputStream.close();
                 socket.close();
+                socket = new Socket("192.168.43.205", 5000);
+                dataInputStream = new DataInputStream(socket.getInputStream());
+                caption = dataInputStream.readUTF();
+                dataInputStream.close();
+                socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -92,7 +99,7 @@ public class SocketClientActivity extends Activity {
             System.out.println("Entering SocketClientActivity.SendImageTask onPostExecute");
             super.onPostExecute(aLong);
             sendImageTask.cancel(true);
-            getResponseFromServer();
+            sendResponseToMainActivity();
         }
 
     }
@@ -144,10 +151,8 @@ public class SocketClientActivity extends Activity {
         sendImageTask.execute();
     }
 
-    private void getResponseFromServer() {
-        System.out.println("Entering SocketClientActivity getResponseFromServer");
-        // TODO: Receive caption from server
-        caption = "DUMMY CAPTION";
+    private void sendResponseToMainActivity() {
+        System.out.println("Entering SocketClientActivity sendResponseToMainActivity");
         Intent resultIntent = new Intent();
         resultIntent.putExtra("CAPTION", caption);
         setResult(Activity.RESULT_OK, resultIntent);

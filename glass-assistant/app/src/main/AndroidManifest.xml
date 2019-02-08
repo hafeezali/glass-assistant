@@ -13,10 +13,13 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".CaptionActivity"
+            android:icon="@drawable/ic_glass_logo"
+            android:label="@string/title_activity_caption"></activity>
+        <activity
             android:name=".SocketClientActivity"
             android:icon="@drawable/ic_glass_logo"
-            android:label="@string/title_activity_image_client">
-        </activity>
+            android:label="@string/title_activity_image_client"></activity>
         <activity
             android:name=".MainActivity"
             android:icon="@drawable/ic_glass_logo"
