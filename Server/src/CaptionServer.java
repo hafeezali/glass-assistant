@@ -1,7 +1,4 @@
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -18,6 +15,9 @@ public class CaptionServer {
     private OutputStream out;
     private int byteCount;
     private boolean fileCreated;
+    private Process process;
+    private BufferedReader bufferedReader;
+    private DataOutputStream dataOutputStream;
 
     private CaptionServer(int port) {
         try {
@@ -30,6 +30,7 @@ public class CaptionServer {
     public static void main(String[] args) {
         CaptionServer captionServer = new CaptionServer(5000);
         captionServer.listen();
+        System.out.println(captionServer.getCaption());
     }
 
     private void listen() {
@@ -50,10 +51,17 @@ public class CaptionServer {
                 }
                 if (fileCreated) {
                     out.close();
-                    caption = getCaption();
                     System.out.println("Saved image: " + count.toString());
+                    socket.close();
+                    caption = getCaption();
+                    System.out.println(caption);
+                    socket = serverSocket.accept();
+                    dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                    dataOutputStream.writeUTF(caption);
+                    dataOutputStream.flush();
+                    dataOutputStream.close();
+                    socket.close();
                     count++;
-                    // TODO: Need to send caption back to client
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -62,7 +70,14 @@ public class CaptionServer {
     }
 
     private String getCaption() {
-        return "This is a sample caption!";
+        try {
+            process = Runtime.getRuntime().exec("python3 ./../CaptionBot/generateCaption.py " + "./../../ImagesReceived/" + count.toString() + "." + imageType);
+            bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            caption = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return caption;
     }
 
 }
