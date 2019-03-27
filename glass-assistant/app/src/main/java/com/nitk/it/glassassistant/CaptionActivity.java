@@ -2,6 +2,7 @@ package com.nitk.it.glassassistant;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -95,7 +96,6 @@ public class CaptionActivity extends Activity {
                     textToSpeech.setLanguage(Locale.US);
                     textToSpeech.speak(caption, TextToSpeech.QUEUE_FLUSH, null);
                     generateAudioSignal();
-
                 }
             }
         });
@@ -104,6 +104,13 @@ public class CaptionActivity extends Activity {
     private void generateAudioSignal() {
         System.out.println("Entering CaptionActivity generateAudioSignal");
         textToSpeech.speak(caption, TextToSpeech.QUEUE_FLUSH, null);
+        sendResponseToMainActivity();
+    }
+
+    private void sendResponseToMainActivity() {
+        System.out.println("Entering CaptionActivity sendResponseToMainActivity");
+        Intent resultIntent = new Intent();
+        setResult(Activity.RESULT_OK, resultIntent);
         finish();
     }
 

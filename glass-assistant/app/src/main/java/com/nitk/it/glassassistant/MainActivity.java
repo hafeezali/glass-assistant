@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.FileObserver;
 import android.provider.MediaStore;
+import android.speech.tts.TextToSpeech;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -24,6 +25,7 @@ import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
 import java.io.File;
+import java.util.Locale;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -60,6 +62,10 @@ public class MainActivity extends Activity {
     private String platform;
 
     private String caption;
+
+    private static final String CAPTURE_IMAGE = "Please tap to continue";
+
+    private TextToSpeech textToSpeech;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -106,6 +112,10 @@ public class MainActivity extends Activity {
 
         mGestureDetector = createGestureDetector(this);
         setContentView(mCardScroller);
+
+        // To be removed
+        platform = "Sockets";
+        takePicture();
     }
 
     private GestureDetector createGestureDetector(Context context) {
@@ -159,8 +169,9 @@ public class MainActivity extends Activity {
         }
         return false;
     }
+// To be uncommented
 
-    @Override
+/*    @Override
     public boolean onCreatePanelMenu(int featureId, Menu menu) {
         System.out.println("Entering MainActivity onCreatePanelMenu");
         if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS || featureId == Window.FEATURE_OPTIONS_PANEL) {
@@ -168,9 +179,9 @@ public class MainActivity extends Activity {
             return true;
         }
         return super.onCreatePanelMenu(featureId, menu);
-    }
+    }*/
 
-    @Override
+/*    @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         System.out.println("Entering onMenuItemSelected");
         if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS || featureId == Window.FEATURE_OPTIONS_PANEL) {
@@ -189,7 +200,7 @@ public class MainActivity extends Activity {
             return true;
         }
         return super.onMenuItemSelected(featureId, item);
-    }
+    }*/
 
     private void connect() {
         System.out.println("Entering MainActivity connect");
@@ -211,8 +222,26 @@ public class MainActivity extends Activity {
 
     private void takePicture() {
         System.out.println("Entering MainActivity takePicture");
+
+        // Adding textToSpeech for capturing image
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status != TextToSpeech.ERROR) {
+                    System.out.println("Entering MainActivity onActivityResult.TextToSpeech.onInit");
+                    textToSpeech.setLanguage(Locale.US);
+                    textToSpeech.speak(CAPTURE_IMAGE, TextToSpeech.QUEUE_FLUSH, null);
+                    generateAudioSignal();
+                }
+            }
+        });
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(intent, TAKE_PICTURE_REQUEST);
+    }
+
+    private void generateAudioSignal() {
+        System.out.println("Entering MainActivity generateAudioSignal");
+        textToSpeech.speak(CAPTURE_IMAGE, TextToSpeech.QUEUE_FLUSH, null);
     }
 
     @Override
@@ -233,6 +262,7 @@ public class MainActivity extends Activity {
             convertToAudio();
         } else if (requestCode == CAPTION_RESULT_REQUEST && resultCode == RESULT_OK) {
             System.out.println("         MainActivity onActivityResult CaptionActivity intent");
+            finish();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
