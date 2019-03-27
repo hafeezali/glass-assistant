@@ -16,6 +16,7 @@ import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,9 +52,13 @@ public class SocketClientActivity extends Activity {
     private OutputStream outputStream;
     private String caption;
     private byte [] imageBytes;
-    private long length;
+    //    private long length;
     private SendImageTask sendImageTask;
     private DataInputStream dataInputStream;
+    private Boolean detectObjects;
+    private String isSendingImage;
+    private String objects;
+    private DataOutputStream dataOutputStream;
 
     public class SendImageTask extends AsyncTask<Void, Void, Void> {
 
@@ -65,21 +70,36 @@ public class SocketClientActivity extends Activity {
             }
             try {
                 socket = new Socket("192.168.43.205",5000);
-                imageBytes = new byte[16 * 1024];
-                length = imageFile.length();
-                outputStream = socket.getOutputStream();
-                inputStream = new FileInputStream(imageFile);
-                int count;
-                while ((count = inputStream.read(imageBytes)) > 0) {
-                    outputStream.write(imageBytes, 0, count);
+                if (!detectObjects) {
+                    isSendingImage = "TRUE";
+                } else {
+                    isSendingImage = "FALSE";
                 }
-                outputStream.flush();
-                outputStream.close();
-                inputStream.close();
+                dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                dataOutputStream.writeUTF(isSendingImage);
+                dataOutputStream.flush();
+                if (isSendingImage.equals("TRUE")) {
+                    imageBytes = new byte[16 * 1024];
+                    // length = imageFile.length();
+                    outputStream = socket.getOutputStream();
+                    inputStream = new FileInputStream(imageFile);
+                    int count;
+                    while ((count = inputStream.read(imageBytes)) > 0) {
+                        outputStream.write(imageBytes, 0, count);
+                    }
+                    outputStream.flush();
+                    outputStream.close();
+                    inputStream.close();
+                }
+                dataOutputStream.close();
                 socket.close();
                 socket = new Socket("192.168.43.205", 5000);
                 dataInputStream = new DataInputStream(socket.getInputStream());
-                caption = dataInputStream.readUTF();
+                if (isSendingImage.equals("TRUE")) {
+                    caption = dataInputStream.readUTF();
+                } else {
+                    objects = dataInputStream.readUTF();
+                }
                 dataInputStream.close();
                 socket.close();
             } catch (IOException e) {
@@ -147,6 +167,7 @@ public class SocketClientActivity extends Activity {
         });
         setContentView(mCardScroller);
         imageFile = (File) getIntent().getExtras().get("IMAGE");
+        detectObjects = (Boolean) getIntent().getExtras().get("DETECTOBJECTS");
         sendImageTask = new SendImageTask();
         sendImageTask.execute();
     }
@@ -154,7 +175,11 @@ public class SocketClientActivity extends Activity {
     private void sendResponseToMainActivity() {
         System.out.println("Entering SocketClientActivity sendResponseToMainActivity");
         Intent resultIntent = new Intent();
-        resultIntent.putExtra("CAPTION", caption);
+        if (!detectObjects) {
+            resultIntent.putExtra("CAPTION", caption);
+        } else {
+            resultIntent.putExtra("OBJECTS", objects);
+        }
         setResult(Activity.RESULT_OK, resultIntent);
         finish();
     }

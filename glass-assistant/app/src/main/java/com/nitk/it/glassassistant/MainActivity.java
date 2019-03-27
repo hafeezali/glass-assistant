@@ -7,12 +7,9 @@ import android.os.Bundle;
 import android.os.FileObserver;
 import android.provider.MediaStore;
 import android.speech.tts.TextToSpeech;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 
@@ -57,15 +54,21 @@ public class MainActivity extends Activity {
 
     private static final int CAPTION_RESULT_REQUEST = 3;
 
+    private static final int OBJECT_DETECTION_REQUEST = 4;
+
     private File imageFile;
 
     private String platform;
 
     private String caption;
 
+    private String objects;
+
     private static final String CAPTURE_IMAGE = "Please tap to continue";
 
     private TextToSpeech textToSpeech;
+
+    private String DETECT_OBJECTS = "Double tap to detect the various objects in the scene, else swipe down to exit";
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -118,7 +121,7 @@ public class MainActivity extends Activity {
         takePicture();
     }
 
-    private GestureDetector createGestureDetector(Context context) {
+    private GestureDetector createGestureDetector(final Context context) {
         System.out.println("Entering MainActivity createGestureDetector");
         GestureDetector gestureDetector = new GestureDetector(context);
 
@@ -129,7 +132,6 @@ public class MainActivity extends Activity {
                     openOptionsMenu();
                     return true;
                 } else if (gesture == Gesture.TWO_TAP) {
-                    // do something on two finger tap
                     return true;
                 } else if (gesture == Gesture.SWIPE_RIGHT) {
                     // do something on right (forward) swipe
@@ -202,12 +204,17 @@ public class MainActivity extends Activity {
         return super.onMenuItemSelected(featureId, item);
     }*/
 
-    private void connect() {
+    private void connect(Boolean detectObjects) {
         System.out.println("Entering MainActivity connect");
         if (platform.equalsIgnoreCase("Sockets")){
             Intent intent = new Intent(getBaseContext(), SocketClientActivity.class);
             intent.putExtra("IMAGE", imageFile);
-            startActivityForResult(intent, GENERATE_CAPTION_SOCKET_REQUEST);
+            intent.putExtra("DETECTOBJECTS", detectObjects);
+            if (!detectObjects) {
+                startActivityForResult(intent, GENERATE_CAPTION_SOCKET_REQUEST);
+            } else {
+                startActivityForResult(intent, OBJECT_DETECTION_REQUEST);
+            }
         }
         else if(platform.equalsIgnoreCase("Bluetooth")){
 
@@ -218,6 +225,11 @@ public class MainActivity extends Activity {
         else{
             // TODO: throw invalid param exception
         }
+    }
+
+    private void detectObjects() {
+        connect(true);
+//        textToSpeech.speak(DETECT_OBJECTS, TextToSpeech.QUEUE_FLUSH, null);
     }
 
     private void takePicture() {
@@ -262,6 +274,12 @@ public class MainActivity extends Activity {
             convertToAudio();
         } else if (requestCode == CAPTION_RESULT_REQUEST && resultCode == RESULT_OK) {
             System.out.println("         MainActivity onActivityResult CaptionActivity intent");
+            detectObjects();
+        } else if (requestCode == OBJECT_DETECTION_REQUEST && resultCode == RESULT_OK) {
+            System.out.println("         MainActivity onActivityResult SocketClientActivity intent");
+            objects = data.getStringExtra("OBJECTS");
+            System.out.println("         MainActivity objects got from SocketClientActivity: " + caption);
+            textToSpeech.speak(objects, TextToSpeech.QUEUE_FLUSH, null);
             finish();
         }
         super.onActivityResult(requestCode, resultCode, data);
@@ -282,7 +300,7 @@ public class MainActivity extends Activity {
             // The picture is ready; process it.
             System.out.println("        MainActivity: pictureFile exists");
             imageFile = pictureFile;
-            connect();
+            connect(false);
         } else {
             // The file does not exist yet. Before starting the file observer, you
             // can update your UI to let the user know that the application is
