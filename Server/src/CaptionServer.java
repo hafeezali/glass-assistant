@@ -18,6 +18,9 @@ public class CaptionServer {
     private Process process;
     private BufferedReader bufferedReader;
     private DataOutputStream dataOutputStream;
+    private DataInputStream dataInputStream;
+    private String isSendingImage;
+    private String objects;
 
     private CaptionServer(int port) {
         try {
@@ -38,30 +41,53 @@ public class CaptionServer {
             try {
                 socket = serverSocket.accept();
                 System.out.println("Connection Established...");
-                inputStream = socket.getInputStream();
-                imageBytes = new byte[16 * 1024];
-                fileCreated = false;
-                while ((byteCount = inputStream.read(imageBytes)) > 0) {
-                    if (!fileCreated) {
-                        System.out.println("Receiving image: " + count.toString());
-                        out = new FileOutputStream(path + count.toString() + "." + imageType);
-                        fileCreated = true;
+                dataInputStream = new DataInputStream(socket.getInputStream());
+                isSendingImage = dataInputStream.readUTF();
+                if (isSendingImage.equals("TRUE")) {
+                    inputStream = socket.getInputStream();
+                    imageBytes = new byte[16 * 1024];
+                    fileCreated = false;
+                    while ((byteCount = inputStream.read(imageBytes)) > 0) {
+                        if (!fileCreated) {
+                            System.out.println("Receiving image: " + count.toString());
+                            out = new FileOutputStream(path + count.toString() + "." + imageType);
+                            fileCreated = true;
+                        }
+                        out.write(imageBytes, 0, byteCount);
                     }
-                    out.write(imageBytes, 0, byteCount);
-                }
-                if (fileCreated) {
-                    out.close();
-                    System.out.println("Saved image: " + count.toString());
+                    if (fileCreated) {
+                        out.close();
+                        System.out.println("Saved image: " + count.toString());
+                        socket.close();
+                        caption = getCaption();
+                        if (caption == null) {
+                            caption = "I am not really sure, but I think it's a blur. Please stay still and try again.";
+                        }
+                        System.out.println(caption);
+                        socket = serverSocket.accept();
+                        dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                        dataOutputStream.writeUTF(caption);
+                        dataOutputStream.flush();
+                        dataInputStream.close();
+                        dataOutputStream.close();
+                        socket.close();
+                        objects = getObjects();
+                        count++;
+                    }
+                } else {
+                    if (objects == null) {
+                        objects = "Sorry, no objects have been identified. Please try again";
+                    }
+                    dataInputStream.close();
                     socket.close();
-                    caption = getCaption();
-                    System.out.println(caption);
                     socket = serverSocket.accept();
                     dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                    dataOutputStream.writeUTF(caption);
+                    dataOutputStream.writeUTF(objects);
                     dataOutputStream.flush();
+                    dataInputStream.close();
                     dataOutputStream.close();
                     socket.close();
-                    count++;
+                    System.out.println(objects);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -69,9 +95,20 @@ public class CaptionServer {
         }
     }
 
+    private String getObjects() {
+        try {
+            process = Runtime.getRuntime().exec("python3 ./../MicrosoftAzure/analyze_image.py " + "./../../ImagesReceived/" + count.toString() + "." + imageType + " detect");
+            bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            objects = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return objects;
+    }
+
     private String getCaption() {
         try {
-            process = Runtime.getRuntime().exec("python3 ./../CaptionBot/generateCaption.py " + "./../../ImagesReceived/" + count.toString() + "." + imageType);
+            process = Runtime.getRuntime().exec("python3 ./../MicrosoftAzure/analyze_image.py " + "./../../ImagesReceived/" + count.toString() + "." + imageType + " describe");
             bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             caption = bufferedReader.readLine();
         } catch (IOException e) {
